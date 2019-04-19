@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # TODO:
 # add a --uploads option to specify the number of latest files to uploads. Good
@@ -211,7 +211,7 @@ dir_make() {
         url=$start
         for part in $(echo "$path" | sed -E -e 's,/, ,g'); do
             url="${url}/${part}"
-            if [ $(dir_exists ${url}/) = "0" ]; then
+            if [ "$(dir_exists ${url}/)" = "0" ]; then
                 ${DAVIX}-mkdir ${OPTS} ${url}/
             fi
         done 
@@ -310,8 +310,8 @@ if [ -n "$LATEST" ]; then
 fi
 
 if [ -n "${KEEP}" -a "${KEEP}" -gt "0" ]; then
-    log "Keeping only ${KEEP} copies at ${DESTINATION}"
-    while [ $(dir_ls_time $DESTINATION | wc -l) -gt $KEEP ]; do
+    log "Keeping only ${KEEP} copie(s) at ${DESTINATION}"
+    while [ "$(dir_ls_time $DESTINATION | wc -l)" -gt "$KEEP" ]; do
         DELETE=$(dir_ls_time $DESTINATION | tail -n 1)
         log "Removing old copy $DELETE"
         file_delete ${DESTINATION%/}/$DELETE
