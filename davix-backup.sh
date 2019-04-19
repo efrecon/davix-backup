@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# TODO:
+# Add option to take davix options from file instead, better for secrets.
+# add a --uploads option to specify the number of latest files to uploads. Good
+# in case we missed some.
+# add options to wait before starting, similar to mirror.tcl
+# add option to sleep and restart automatically
+# add option to force compressor from outside
 
 #set -x
 
@@ -25,22 +32,37 @@ usage() {
   cat << USAGE >&2
   
 Description:
-  $cmdname will compress the latest file matching a pattern, compress it,
-  move it to a destination directory and rotate files in this directory
-  to keep disk space under control. Compression via zip is preferred,
-  otherwise gzip.
+
+  $cmdname will find the latest file matching a pattern, possbily compress it,
+  move it to a destination (remote) directory and rotate files in this
+  directory to keep disk space under control. Compression via zip is
+  preferred, otherwise gzip. Remote copying is performed through davix, which
+  supports WebDAV, S3, Azure and Google buckets.
 
 Usage:
-  $cmdname [-option arg] pattern
+  $cmdname [-option arg --long-option(=)arg] pattern
 
-  where all dash-led single options are as follows:
-    -v              Be more verbose
-    -d destination  Directory where to place (and rotate) compressed copies, default to current dir
-    -k keep         Number of compressed copies to keep, defaults to empty, meaning all
-    -c level        Compression level, defaults to 0, meaning no compression
-    -w password     Password for compressed archive, only when zip available
-    -W path         Same as -w, but read content of password from file instead
-    -t command      Command to execute once done, path to copy will be passed as an argument
+  where all dash-led options are as follows (long options can be followed by
+  an equal sign):
+    -v | --verbose       Be more verbose
+    -d | --destination   Directory where to place (and rotate) (compressed)
+                         copies, default to current dir. Can be a remote
+                         resource starting with http:// or https://
+    -k | --keep          Number of compressed copies to keep, defaults to empty,
+                         meaning all
+    -c | --compression   Compression level, defaults to -1, meaning no
+                         compression attempt made, file kept as is.
+    -w | --password      Password for compressed archive, only works when zip
+                         available
+    -W | --password-file Same as -w, but read content of password from
+                         specified file instead.
+    -t | --then          Command to execute once done, location of copied
+                         resource will be passed as an argument
+    -x | --davix         Path to davix command, defaults to davix. For
+                         uncompressed scenarios, you can use something such as:
+                            docker run -it --rm --entrypoint= \
+                                -v ${HOME}:${HOME} efrecon/davix davix
+    -o | --davix-options Options to pass to davix commands
 USAGE
   exit "$exitcode"
 }
@@ -261,7 +283,8 @@ if [ -n "$LATEST" ]; then
     fi
 fi
 
-if [ -n "${KEEP}" ]; then
+if [ -n "${KEEP}" -a "${KEEP}" -gt "0" ]; then
+    log "Keeping only ${KEEP} copies at ${DESTINATION}"
     while [ $(dir_ls_time $DESTINATION | wc -l) -gt $KEEP ]; do
         DELETE=$(dir_ls_time $DESTINATION | tail -n 1)
         log "Removing old copy $DELETE"
