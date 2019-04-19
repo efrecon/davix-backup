@@ -5,7 +5,6 @@
 # in case we missed some.
 # add options to wait before starting, similar to mirror.tcl
 # add option to sleep and restart automatically
-# add option to force compressor from outside
 
 #set -x
 
