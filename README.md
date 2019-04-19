@@ -52,9 +52,31 @@ docker run -it --rm --entrypoint= -v ${HOME}:${HOME} efrecon/davix davix
 ### `-o` or `--davix-options`
 
 Takes a string that might contain `davix` specific options that will be added to
-all `davix` commands before their execution. This is a good place to specify
-credentials of various sorts, for example. The default is an empty string. The
-long option can also be written `--davix-opts`.
+the options given to all `davix` commands before their execution. The default
+set of `davix` options is an empty string. The long option can also be written
+`--davix-opts`.
+
+This option is cumulative (together with the next one), every occurence of the
+option will append the value to the set of options that will be passed to
+`davix` with a whitespace separator.
+
+### `-O` or `--davix-options-file`
+
+Takes the path to a file that might contain `davix` specific options that will
+be added to the options given to all `davix` commands before their execution.
+This is a good place to specify credentials of various sorts, for example. The
+default is an empty string. The long option can also be written
+`--davix-opts-file`.
+
+This option is cumulative (together with the previous one), every occurence of
+the option will append the value read from the file to the set of options that
+will be passed to `davix` with a whitespace separator. The following
+pseudo-example reads the beginning of authentication options from the command
+line and the password from a file:
+
+```shell
+./davix-backup.sh -o "--userlogin myuser --userpass" -O my-secret-file --
+```
 
 ### `-d` or `--destination`
 
@@ -78,7 +100,8 @@ compression at all: the selected files will be copied as is to the destination.
 As soon as compression is greater or equal to `0`, `davix-backup` will attempt
 to compress to an archive in a temporary directory. `zip`, when present is
 preferred because it is able to perform some encryption on the archive using a
-password. When not present, `gzip` will be used instead, if available.
+password. When not present, `gzip` will be used instead, if available. See
+option `--compressor`.
 
 ### `-w` or `--password`
 
@@ -90,6 +113,11 @@ string, meaning no encryption. The long option can be abbreviated to `--pass`.
 Same as the `--password` option, but takes the path to a file from which the
 password will be read. This is useful for integration with Docker secrets for
 example.
+
+### `-z` or `--compressor` or `--zipper`
+
+Takes the path to the compressing binary to use for compression. Only `zip` and
+`gzip` are recognised. Password encryption is only supported by `zip`.
 
 ### `-t` or `--then`
 

@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # TODO:
-# Add option to take davix options from file instead, better for secrets.
 # add a --uploads option to specify the number of latest files to uploads. Good
 # in case we missed some.
 # add options to wait before starting, similar to mirror.tcl
@@ -19,8 +18,7 @@ THEN=""
 PASSWORD=""
 DAVIX=davix
 OPTS=
-# Run with, but this will not work when compressing
-# DAVIX=docker run -it --rm --entrypoint= -v ${HOME}:${HOME} efrecon/davix davix 
+COMPRESSOR=
 
 # Dynamic vars
 cmdname=$(basename $(readlink -f $0))
@@ -56,6 +54,7 @@ Usage:
                          available
     -W | --password-file Same as -w, but read content of password from
                          specified file instead.
+    -z | --compressor    Path to compressor binary (zip or gzip)
     -t | --then          Command to execute once done, location of copied
                          resource will be passed as an argument
     -x | --davix         Path to davix command, defaults to davix. For
@@ -63,6 +62,13 @@ Usage:
                             docker run -it --rm --entrypoint= \
                                 -v ${HOME}:${HOME} efrecon/davix davix
     -o | --davix-options Options to pass to davix commands
+    -O | --davix-opts-file Same as above, but read from path passed as argument
+                           instead
+
+  Note that --davix-options and other options for setting options to davix are
+  cumulative. Every value is appended to the original empty set of davix options
+  with a space. This allows to acquire secrets from file instead of the command
+  line.
 USAGE
   exit "$exitcode"
 }
@@ -76,14 +82,14 @@ while [ $# -gt 0 ]; do
         --keep=*)
             KEEP="${1#*=}"; shift 1;;
 
-        -c | --compress*)
+        -c | --compress | --compression)
             COMPRESS=$2; shift 2;;
-        --compress*=*)
+        --compress=* | --compression=*)
             NS="${1#*=}"; shift 1;;
 
         -d | --dest*)
             DESTINATION=$2; shift 2;;
-        --dest*=*)
+        --dest=* | --destination=*)
             DESTINATION="${1#*=}"; shift 1;;
 
         -w | --password | --pass)
@@ -91,10 +97,15 @@ while [ $# -gt 0 ]; do
         --password=* | --pass=*)
             PASSWORD="${1#*=}"; shift 1;;
 
-        -W | --pass*-file)
+        -W | --pass-file | --password-file)
             PASSWORD=$(cat $2); shift 2;;
-        --pass*-file=*)
+        --pass-file=* | --password-file=*)
             PASSWORD=$(cat ${1#*=}); shift 1;;
+
+        -z | --compressor | --zipper)
+            COMPRESSOR=$2; shift 2;;
+        --compressor=* | --zipper=*)
+            COMPRESSOR="${1#*=}"; shift 1;;
 
         -t | --then)
             THEN=$2; shift 2;;
@@ -106,10 +117,15 @@ while [ $# -gt 0 ]; do
         --davix=*)
             DAVIX="${1#*=}"; shift 1;;
 
-        -o | --davix-opt*s)
-            OPTS=$2; shift 2;;
-        --davix-opt*s=*)
-            OPTS="${1#*=}"; shift 1;;
+        -o | --davix-opts | --davix-options)
+            OPTS="$OPTS $2"; shift 2;;
+        --davix-opts=* | --davix-options=*)
+            OPTS="$OPTS ${1#*=}"; shift 1;;
+
+        -O | --davix-opts-file | --davix-options-file)
+            OPTS="$OPTS $(cat $2)"; shift 2;;
+        --davix-opts-file=* | --davix-options-file=*)
+            OPTS="$OPTS $(cat ${1#*=})"; shift 1;;
 
         -v | --verbose)
             VERBOSE=1; shift;;
@@ -131,18 +147,29 @@ if [ $# -eq 0 ]; then
 fi
 
 # Decide upon which compressor to use. Prefer zip to be able to encrypt
-ZEXT=
-COMPRESSOR=
-ZIP=$(which zip)
-if [ -n "${ZIP}" ]; then
-    ZEXT="zip"
-    COMPRESSOR=${ZIP}
-else
-    GZIP=$(which gzip)
-    if [ -n "${GZIP}" ]; then
-        ZEXT="gz"
-        COMPRESSOR=${GZIP}
+if [ -z "$COMPRESSOR" ]; then
+    ZIP=$(which zip)
+    if [ -n "${ZIP}" ]; then
+        COMPRESSOR=${ZIP}
+    else
+        GZIP=$(which gzip)
+        if [ -n "${GZIP}" ]; then
+            COMPRESSOR=${GZIP}
+        fi
     fi
+fi
+
+# Decide extension
+ZEXT=
+if [ -n "$COMPRESSOR" ]; then
+    case "$(basename "$COMPRESSOR")" in
+        zip)
+            ZEXT="zip";;
+        gzip)
+            ZEXT="gz";;
+        *)
+            echo "Compressor $COMPRESSOR not recognised!" >& 2
+    esac
 fi
 
 # Conditional logging
