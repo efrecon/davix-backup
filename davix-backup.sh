@@ -10,6 +10,7 @@
 
 # All (good?) defaults
 VERBOSE=0
+TRACE=0
 KEEP=""
 DESTINATION="."
 COMPRESS=-1
@@ -129,6 +130,9 @@ while [ $# -gt 0 ]; do
         -v | --verbose)
             VERBOSE=1; shift;;
 
+        --trace)
+            TRACE=1; shift;;
+
         -h | --help)
             usage 0;; 
         --)
@@ -180,6 +184,16 @@ log() {
     fi
 }
 
+davix() {
+    local op=$1
+    shift
+
+    if [ "$TRACE" == "1" ]; then
+        echo "Executing: ${DAVIX}-${op} ${OPTS} $@" >& 2
+    fi
+    ${DAVIX}-${op} ${OPTS} $@
+}
+
 dir_exists() {
     local dir=${1%%/}/
 
@@ -212,7 +226,7 @@ dir_make() {
         for part in $(echo "$path" | sed -E -e 's,/, ,g'); do
             url="${url}/${part}"
             if [ "$(dir_exists ${url}/)" = "0" ]; then
-                ${DAVIX}-mkdir ${OPTS} ${url}/
+                davix mkdir ${url}/
             fi
         done 
     fi
@@ -224,7 +238,7 @@ dir_ls_time() {
     if [ -z "$DAVIX" ]; then
         ls $dir -1 -t
     else
-        ${DAVIX}-ls ${OPTS} -l ${dir} | awk -F' ' '{$1=$2=$3="";$0=$0;$1=$1}1' | sort -r | awk -F' ' '{print $NF}' | sed -E -e "s,\r$,,g"
+        davix ls -l ${dir} | awk -F' ' '{$1=$2=$3="";$0=$0;$1=$1}1' | sort -r | awk -F' ' '{print $NF}' | sed -E -e "s,\r$,,g"
     fi
 }
 
@@ -235,7 +249,7 @@ file_copy() {
     if [ -z "$DAVIX" ]; then
         cp ${src} ${dir}
     else
-        ${DAVIX}-put ${OPTS} ${src} ${dir}$(basename $src)
+        davix put ${src} ${dir}$(basename $src)
     fi
 }
 
@@ -243,7 +257,7 @@ file_delete() {
     if [ -z "$DAVIX" ]; then
         rm -rf $1
     else
-        ${DAVIX}-rm ${OPTS} $1
+        davix rm $1
     fi
 }
 
@@ -309,13 +323,15 @@ if [ -n "$LATEST" ]; then
     fi
 fi
 
-if [ -n "${KEEP}" -a "${KEEP}" -gt "0" ]; then
-    log "Keeping only ${KEEP} copie(s) at ${DESTINATION}"
-    while [ "$(dir_ls_time $DESTINATION | wc -l)" -gt "$KEEP" ]; do
-        DELETE=$(dir_ls_time $DESTINATION | tail -n 1)
-        log "Removing old copy $DELETE"
-        file_delete ${DESTINATION%/}/$DELETE
-    done
+if [ -n "${KEEP}" ]; then
+    if [ "${KEEP}" -gt "0" ]; then
+        log "Keeping only ${KEEP} copie(s) at ${DESTINATION}"
+        while [ "$(dir_ls_time $DESTINATION | wc -l)" -gt "$KEEP" ]; do
+            DELETE=$(dir_ls_time $DESTINATION | tail -n 1)
+            log "Removing old copy $DELETE"
+            file_delete ${DESTINATION%/}/$DELETE
+        done
+    fi
 fi
 
 # Cleanup temporary directory
