@@ -87,7 +87,7 @@ while [ $# -gt 0 ]; do
         --compress=* | --compression=*)
             NS="${1#*=}"; shift 1;;
 
-        -d | --dest*)
+        -d | --destination | --dest)
             DESTINATION=$2; shift 2;;
         --dest=* | --destination=*)
             DESTINATION="${1#*=}"; shift 1;;
