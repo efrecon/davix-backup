@@ -124,3 +124,18 @@ Takes the path to the compressing binary to use for compression. Only `zip` and
 Takes a command to execute once the backup operation has ended. The default is
 an empty string, meaning that no command will be executed. When a command is
 specified, it will take the path to the destination resource that was created.
+
+### `--wait`
+
+Wait for a number of seconds before the (first) copy operation. The default is
+not to wait at all. Whenever the value of the period contains a `:` sign, a
+random value between both periods on each side of the `:` sign will be computed.
+Periods can be integers, but also human readable strings such as `5M` or `5
+Minutes`, etc.
+
+### `-r` or `--repeat`
+
+Repeat the copy operation, waiting for this many seconds between the start of
+the copy and the next attempt. The period is in seconds, and can also be
+expressed in human-readable forms (see `--wait`). The default is not to wait and
+perform a single copy operation.
