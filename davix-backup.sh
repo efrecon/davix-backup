@@ -370,7 +370,7 @@ while :; do
     # Create temporary directory for storage of compressed and encrypted files.
     TMPDIR=$(mktemp -d -t ${appname}.XXXXXX)
 
-    LATEST=$(ls $@ -1 -t | head -n 1)
+    LATEST=$(ls $@ -1 -t -d | head -n 1)
     if [ -n "$LATEST" ]; then
         if [ "$COMPRESS" -ge "0" -a -n "$COMPRESSOR" ]; then
             ZTGT=${TMPDIR}/$(basename $LATEST).${ZEXT}
@@ -387,9 +387,9 @@ while :; do
                     cwd=$(pwd)
                     cd $(dirname ${LATEST})
                     if [ -z "${PASSWORD}" ]; then
-                        zip -${COMPRESS} ${ZTGT} $(basename ${LATEST})
+                        zip -${COMPRESS} -r ${ZTGT} $(basename ${LATEST})
                     else
-                        zip -${COMPRESS} -P "${PASSWORD}" ${ZTGT} $(basename ${LATEST})
+                        zip -${COMPRESS} -P "${PASSWORD}" -r ${ZTGT} $(basename ${LATEST})
                     fi
                     cd ${cwd}
                     SRC="$ZTGT"

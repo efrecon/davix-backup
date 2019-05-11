@@ -12,6 +12,10 @@ against local (mounted?) directories.
 
   [davix]: https://davix.web.cern.ch/davix/docs/devel/
 
+When compressing using `zip`, it is possible to operate on the latest directory
+instead. In this case, the recursive content of the latest directory will be
+zipped and sent to the remote location.
+
 ## Options
 
 `davix-backup` accepts both short (led by a single `-` dash sign) and long (led
