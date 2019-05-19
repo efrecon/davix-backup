@@ -222,6 +222,11 @@ howlong() {
         echo $(expr $len \* 604800)
         return
     fi
+    if [ -n "$(echo "$1"|grep -E '[0-9]+[[:space:]]*[Dd]')" ]; then
+        len=$(echo "$1"  | sed -En 's/([0-9]+)[[:space:]]*[Dd].*/\1/p')
+        echo $(expr $len \* 86400)
+        return
+    fi
     if [ -n "$(echo "$1"|grep -E '[0-9]+[[:space:]]*[Hh]')" ]; then
         len=$(echo "$1"  | sed -En 's/([0-9]+)[[:space:]]*[Hh].*/\1/p')
         echo $(expr $len \* 3600)
