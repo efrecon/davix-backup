@@ -1,8 +1,4 @@
-# We might run with the following for debian-default
-#FROM debian:stretch-slim
-
-
-FROM efrecon/davix
+FROM efrecon/davix:0.7.6
 RUN \
     apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates zip && \
